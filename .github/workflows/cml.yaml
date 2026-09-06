@@ -1,0 +1,60 @@
+name: model-training
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+permissions: write-all
+
+jobs:
+  train_and_compare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install system dependencies for CML
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libpixman-1-dev
+
+      - name: Setup CML
+        uses: iterative/setup-cml@v3
+        env:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+      - name: Install dependencies
+        run: |
+          pip install pandas scikit-learn matplotlib dvc
+
+      - name: Run DVC Pipeline
+        run: |
+          dvc repro
+
+      # L'enchaînement exact de votre cours DataCamp
+      - name: Write CML report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## 📊 Rapport d'Expérimentation MLOps" > report.md
+          
+          # 1. Afficher les métriques de la branche actuelle
+          echo "### 📈 Métriques Actuelles (Workspace)" >> report.md
+          dvc metrics show --md >> report.md
+          
+          echo -e "\n" >> report.md
+          
+          # 2. Récupérer les branches distantes pour permettre la comparaison
+          git fetch --prune --unshallow || git fetch --prune
+          
+          # 3. Comparer avec la branche main
+          echo "### ⚔️ Différence par rapport à la branche main" >> report.md
+          dvc metrics diff main --md >> report.md
+
+          # 4. Publier le commentaire
+          cml comment create report.md

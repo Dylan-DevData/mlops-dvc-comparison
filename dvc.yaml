@@ -1,0 +1,30 @@
+stages:
+  preprocess:
+    cmd: python3 preprocess_dataset.py
+    deps:
+      - preprocess_dataset.py
+      - raw_dataset/weather.csv
+      - utils_and_constants.py
+    outs:
+      - processed_dataset/weather.csv
+
+  train:
+    cmd: python3 train.py
+    deps:
+      - metrics_and_plots.py
+      - model.py
+      - processed_dataset/weather.csv
+      - train.py
+      - utils_and_constants.py
+    metrics:
+      - metrics.json:
+          cache: false
+    plots:
+      - predictions.csv:
+          template: confusion_normalized
+          x: predicted_label
+          y: true_label
+          x_label: 'Predicted label'
+          y_label: 'True label'
+          title: Confusion matrix
+          cache: false
