@@ -8,7 +8,7 @@ from utils_and_constants import RFC_FOREST_DEPTH
 
 def train_model(X_train, y_train):
     model = RandomForestClassifier(
-        max_depth=RFC_FOREST_DEPTH, n_estimators=100, random_state=1993
+        max_depth=RFC_FOREST_DEPTH, n_estimators=20, random_state=1993
     )
     model.fit(X_train, y_train)
     return model
