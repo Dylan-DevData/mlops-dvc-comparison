@@ -48,7 +48,7 @@ git checkout -b tuning-hyperparameters
    *DVC réentraîne le modèle, écrase `metrics.json` avec les nouveaux scores, et met à jour `predictions.csv`.*
 
 ### Étape 4 : Tester la comparaison en Local
-Avant d'envoyer sur GitHub, vous pouvez vérifier le gain (ou la perte) de performance directement dans votre terminal par rapport à l'historique de `main` :
+Avant d'envoyer sur GitHub, vous pouvez vérifier le gain (or la perte) de performance directement dans votre terminal par rapport à l'historique de `main` :
 ```bash
 # Compare le fichier metrics.json actuel avec celui sauvegardé sur main
 dvc metrics diff main
@@ -66,6 +66,39 @@ git push origin tuning-hyperparameters
 1. Allez sur GitHub et ouvrez une **Pull Request** (de `tuning-hyperparameters` vers `main`).
 2. **Ne fusionnez pas tout de suite !** Attendez 1 à 2 minutes.
 3. Le robot GitHub Actions va lire votre `.github/workflows/cml.yaml`, exécuter l'entraînement, et publier un tableau comparatif automatique en commentaire.
+
+---
+
+## 🎛️ Évolution de la CI : Gestion de l'installation de DVC
+
+Au cours du projet, nous avons exploré deux architectures différentes pour installer DVC sur la machine virtuelle de GitHub Actions, réparties sur deux branches de test :
+
+### 🔹 Méthode 1 (Branche : `tuning-hyperparameters`) — L'installation simple via PIP
+Dans la première version du fichier `cml.yaml`, DVC a été installé directement comme une bibliothèque Python standard à l'aide de `pip`.
+
+* **Le Code utilisé :**
+  ```yaml
+        - name: Install dependencies
+          run: |
+            pip install pandas scikit-learn matplotlib dvc
+  ```
+* **Pourquoi cette méthode ?** Elle est extrêmement rapide et légère pour les projets locaux ou lorsque les données restent stockées directement dans Git. Elle regroupe toutes les installations en une seule ligne simple.
+
+### 🔹 Méthode 2 (Branche : `test-official-dvc-action`) — L'action officielle globale (DataCamp Style)
+Dans la seconde version, nous avons migré vers la méthode officielle recommandée par l'éditeur en utilisant l'action GitHub dédiée `setup-dvc` au niveau du système, découplée des packages de calcul Python.
+
+* **Le Code utilisé :**
+  ```yaml
+        # Configuration globale de DVC via l'action officielle
+        - name: Setup DVC
+          uses: iterative/setup-dvc@v1
+            
+        # Installation des bibliothèques de calcul Python uniquement
+        - name: Install Python ML libraries
+          run: |
+            pip install pandas scikit-learn matplotlib
+  ```
+* **Pourquoi cette méthode ?** C’est l’approche industrielle indispensable pour le **Cloud**. L'action `setup-dvc@v1` installe DVC de manière isolée et globale sur le système d'exploitation du serveur et pré-configure de manière sécurisée les protocoles réseau nécessaires si vos données doivent être rapatriées depuis un stockage distant crypté (comme AWS S3, Google Drive ou Azure Blob Storage) via un `dvc pull`.
 
 ---
 
